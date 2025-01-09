@@ -1,4 +1,4 @@
-const { test, expect, chromium } = require('@playwright/test');
+import { chromium, expect, test } from '@playwright/test';
 
 
 const capabilities = {
@@ -18,45 +18,32 @@ const capabilities = {
     }
 };
 
-test('Scenario 1', async ({ }) => {
+test('Scenario 1', async () => {
     // Step 1: Open LambdaTest Selenium Playground
     const browser = await chromium.connect(`wss://cdp.lambdatest.com/playwright?capabilities=${encodeURIComponent(JSON.stringify(capabilities))}`);
     const context = await browser.newContext();
     const page = await context.newPage();
-    await page.goto('https://www.lambdatest.com/selenium-playground/', { waitUnitl: 'load', timeout: 120000 });
+    await page.goto('https://www.lambdatest.com/selenium-playground/', { waitUntil: 'load', timeout: 120000 });
 
-    // Step 2: Click “Simple Form Demo”
-    await page.click('text=Simple Form Demo');
-
-    // Step 3: Validate that the URL contains “simple-form-demo”
-    const url = page.url();
-    if (!url.includes('simple-form-demo')) {
-        console.error('URL does not contain "simple-form-demo"');
-        await browser.close();
-        return;
+    await page.getByRole('link', { name: 'Simple Form Demo' }).click();
+    await expect(page.url()).toContain("simple-form-demo");
+    const inputText = "Welcome to LambdaTest";
+    await page.getByPlaceholder('Please enter your Message').fill(inputText);
+    await page.locator('//button[@id="showInput"]').click();
+    await page.waitForSelector('//p[@id="message"]')
+    const messageText = await page.locator('//p[@id="message"]').textContent()
+    try {
+        expect(messageText).toEqual(inputText)
+        // Mark the test as completed or failed
+        await page.evaluate(_ => { }, `lambdatest_action: ${JSON.stringify({ action: 'setTestStatus', arguments: { status: 'passed', remark: 'Test scenario 1 passed' } })}`)
+    } catch (e) {
+        await page.evaluate(_ => { }, `lambdatest_action: ${JSON.stringify({ action: 'setTestStatus', arguments: { status: 'failed', remark: e.stack } })}`)
+        throw e;
     }
-
-    // Step 4: Create a variable for a string value
-    const message = 'Welcome to LambdaTest';
-
-    // Step 5: Use this variable to enter values in the “Enter Message” text box
-    await page.fill('#user-message', message);
-
-    // Step 6: Click “Get Checked Value”
-    await page.click('#showInput');
-
-    // Step 7: Validate whether the same text message is displayed
-    const displayedMessage = await page.textContent('#message');
-    if (displayedMessage.trim() === message) {
-        console.log('Test passed: The message is displayed correctly.');
-    } else {
-        console.error('Test failed: The message is not displayed correctly.');
-    }
-
     await browser.close();
 });
 
-test('Scenario 2: Drag & Drop Sliders - Set value to 95', async ({ }) => {
+test('Scenario 2: Drag & Drop Sliders - Set value to 95', async () => {
 
     const browser = await chromium.connect(`wss://cdp.lambdatest.com/playwright?capabilities=${encodeURIComponent(JSON.stringify(capabilities))}`);
     const context = await browser.newContext();
@@ -65,6 +52,7 @@ test('Scenario 2: Drag & Drop Sliders - Set value to 95', async ({ }) => {
     // Step 1: Open the LambdaTest Selenium Playground page
     await page.goto('https://www.lambdatest.com/selenium-playground/', { waitUntil: 'load', timeout: 120000 });
 
+    const target = '95';
     // Step 2: Click “Drag & Drop Sliders”
     await page.click('text=Drag & Drop Sliders');
 
@@ -81,13 +69,18 @@ test('Scenario 2: Drag & Drop Sliders - Set value to 95', async ({ }) => {
         await slider.press('ArrowRight');
     }
 
-    // for (let i = 15; i <= 95; i++) {await slider.press('ArrowRight'); }
-
-    // Step 5: Validate whether the range value shows 95
-    await expect(rangeValue).toHaveText('95');
+    try {
+        let value = await page.locator('//output[@id="rangeSuccess"]').textContent()
+        expect(value).toEqual(target)
+        // Mark the test as completed or failed
+        await page.evaluate(_ => { }, `lambdatest_action: ${JSON.stringify({ action: 'setTestStatus', arguments: { status: 'passed', remark: 'Test scenario 2 passed' } })}`)
+    } catch (e) {
+        await page.evaluate(_ => { }, `lambdatest_action: ${JSON.stringify({ action: 'setTestStatus', arguments: { status: 'failed', remark: e.stack } })}`)
+        throw e
+    }
 });
 
-test('Scenario 3: Input Form Submit - Validate Error and Success Messages', async ({ }) => {
+test('Scenario 3: Input Form Submit - Validate Error and Success Messages', async () => {
 
     const browser = await chromium.connect(`wss://cdp.lambdatest.com/playwright?capabilities=${encodeURIComponent(JSON.stringify(capabilities))}`);
     const context = await browser.newContext();
@@ -135,5 +128,13 @@ test('Scenario 3: Input Form Submit - Validate Error and Success Messages', asyn
 
     // Step 9: Validate the success message “Thanks for contacting us, we will get back to you shortly.” on the screen
     const successMessage = page.locator('//p[@class="success-msg hidden"]');
-    await expect(successMessage).toHaveText('Thanks for contacting us, we will get back to you shortly.');
+
+    try {
+        expect(successMessage).toHaveText('Thanks for contacting us, we will get back to you shortly.')
+        // Mark the test as completed or failed
+        await page.evaluate(_ => { }, `lambdatest_action: ${JSON.stringify({ action: 'setTestStatus', arguments: { status: 'passed', remark: 'Test scenario 3 passed' } })}`)
+    } catch (e) {
+        await page.evaluate(_ => { }, `lambdatest_action: ${JSON.stringify({ action: 'setTestStatus', arguments: { status: 'failed', remark: e.stack } })}`)
+        throw e
+    }
 });
